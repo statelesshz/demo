@@ -1,12 +1,17 @@
+import os
+import sys
 from common import execute_subprocess_async
 
 
 def run_text_classification():
+    script_path = os.path.sep.join([
+        os.path.dirname(os.path.abspath(__file__)), "text-classification", "run_glue.py"
+    ])
     cmd = [
         "torchrun",
         "--nproc_per_node=8",
         "--master_port=29501",
-        "./text-classification/run_glue.py",
+        script_path,
         "--model_name_or_path=distilbert/distilbert-base-uncased",
         "--output_dir=./tmp_text_classification",
         "--overwrite_output_dir",
