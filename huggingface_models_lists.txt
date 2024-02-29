@@ -1,0 +1,2 @@
+distilbert,distilbert/distilbert-base-uncased,text-classification
+bert,google-bert/bert-base-uncased,text-classification

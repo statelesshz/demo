@@ -3,6 +3,24 @@ from common import execute_subprocess_async
 
 ROOT_PATH = os.path.dirname(os.path.abspath(__file__))
 
+MODEL_TO_PATH = dict()
+MODEL_TO_TASK = dict()
+TASK_TO_MODEL = dict()
+
+MODELS_FILENAME = os.path.join(os.path.dirname(__file__), "huggingface_models_lists.txt")
+assert os.path.exists(MODELS_FILENAME)
+with open(MODELS_FILENAME, "r") as fh:
+    lines = fh.readlines()
+    lines = [line.rstrip() for line in lines]
+    for line in lines:
+        model_name, model_path, task_name = line.split(",")
+        if model_name not in MODEL_TO_PATH:
+            MODEL_TO_PATH[model_name] = [model_path]
+        else:
+            MODEL_TO_PATH[model_name].append(model_path)
+        MODEL_TO_TASK[model_name] = task_name
+        TASK_TO_MODEL[task_name] = model_name
+
 
 def run_text_classification():
     script_path = os.path.sep.join([
