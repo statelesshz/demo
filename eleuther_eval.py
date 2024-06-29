@@ -4,9 +4,6 @@ import os
 import datasets
 import evaluate
 import transformers
-from lm_eval import evaluator
-from lm_eval.models.huggingface import HFLM
-from lm_eval.utils import make_table
 
 from openmind.hf.hf_utils import (
     AutoConfig,
@@ -25,17 +22,19 @@ def patch_load_dataset():
     return wrapper
 
 
-def patch_hf_evaluate_load():
-    def wrapper(path, **kwargs):
-        if path == "exact_match":
-            path = "./exact_match"
-        breakpoint()
-        return evaluate.load(path, **kwargs)
-    return wrapper
-
-
 @contextlib.contextmanager
 def do_eval_with_ctx(*args, **kwargs):
+    origin_evaluate_load = evaluate.load
+    def patch_evaluate_load(path, *args, **kwargs):
+        if path == "exact_math":
+            path = "./exact_match"
+        return origin_evaluate_load(path, *args, **kwargs)
+    evaluate.load = patch_evaluate_load
+
+    from lm_eval import evaluator
+    from lm_eval.models.huggingface import HFLM
+    from lm_eval.utils import make_table
+
     # origin
     origin_env_tokenizers_parallelism = os.environ.get("TOKENIZERS_PARALLELISM")
     origin_hf_evaluate_load = evaluate.load
@@ -49,7 +48,7 @@ def do_eval_with_ctx(*args, **kwargs):
 
     # patch
     os.environ["TOKENIZERS_PARALLELISM"] = "0"
-    evaluate.load = patch_hf_evaluate_load()
+    # evaluate.load = patch_hf_evaluate_load()
     datasets.load_dataset = patch_load_dataset()
     transformers.AutoConfig = AutoConfig
     transformers.AutoTokenizer = AutoTokenizer
@@ -71,7 +70,7 @@ def do_eval_with_ctx(*args, **kwargs):
             os.environ["TOKENIZERS_PARALLELISM"] = origin_env_tokenizers_parallelism
         else:
             del os.environ["TOKENIZERS_PARALLELISM"]
-        evaluate.load = origin_hf_evaluate_load
+        evaluate.load = origin_evaluate_load
         datasets.load_dataset =origin_load_dataset
         transformers.AutoConfig = origin_AutoConfig
         transformers.AutoTokenizer = origin_AutoTokenizer
@@ -93,7 +92,3 @@ def eval(*args, **kwargs):
         return eval_result
 
 results = eval()
-
-# print(make_table(results))
-# if "groups" in results:
-#     print(make_table(results, "groups"))
