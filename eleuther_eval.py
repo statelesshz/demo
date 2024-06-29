@@ -1,6 +1,7 @@
 import contextlib
 import os
 
+import datasets
 import transformers
 from lm_eval import evaluator
 from lm_eval.models.huggingface import HFLM
@@ -12,6 +13,15 @@ from openmind.hf.hf_utils import (
     AutoModelForSeq2SeqLM,
     AutoTokenizer,
 )
+from openmind.omdatasets.om_datasets import OmDataset
+
+
+def patch_load_dataset():
+    def wrapper(path, *args, **kwargs):
+        if path == "EleutherAI/arithmetic":
+            path = "humphrey007/arithmetic"
+        return OmDataset.load_dataset(path, *args, **kwargs)
+    return wrapper
 
 
 @contextlib.contextmanager
@@ -24,6 +34,7 @@ def do_eval_with_ctx(*args, **kwargs):
     origin_AutoTokenizer = transformers.AutoTokenizer
     origin_AutoModelForCausalLM = transformers.AutoModelForCausalLM
     origin_AutoModelForSeq2SeqLM = transformers.AutoModelForSeq2SeqLM
+    origin_load_dataset = datasets.load_dataset
 
     # patch
     os.environ["TOKENIZERS_PARALLELISM"] = "0"
@@ -33,6 +44,7 @@ def do_eval_with_ctx(*args, **kwargs):
     transformers.AutoTokenizer = AutoTokenizer
     transformers.AutoModelForCausalLM = AutoModelForCausalLM
     transformers.AutoModelForSeq2SeqLM = AutoModelForSeq2SeqLM
+    datasets.load_dataset = patch_load_dataset()
 
 
     try:
@@ -50,6 +62,7 @@ def do_eval_with_ctx(*args, **kwargs):
         transformers.AutoTokenizer = origin_AutoTokenizer
         transformers.AutoModelForCausalLM = origin_AutoModelForCausalLM
         transformers.AutoModelForSeq2SeqLM = origin_AutoModelForSeq2SeqLM
+        datasets.load_dataset = origin_load_dataset
 
 
 def eval(*args, **kwargs):
