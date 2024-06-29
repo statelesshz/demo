@@ -6,6 +6,13 @@ from lm_eval import evaluator
 from lm_eval.models.huggingface import HFLM
 from lm_eval.utils import make_table
 
+from openmind.hf.hf_utils import (
+    AutoConfig,
+    AutoModelForCausalLM,
+    AutoModelForSeq2SeqLM,
+    AutoTokenizer,
+)
+
 
 @contextlib.contextmanager
 def do_eval_with_ctx(*args, **kwargs):
@@ -22,7 +29,12 @@ def do_eval_with_ctx(*args, **kwargs):
     os.environ["TOKENIZERS_PARALLELISM"] = "0"
     HFLM.get_model_info = lambda x: ""
     evaluator.get_git_commit_hash = lambda : ""
-    
+    transformers.AutoConfig = AutoConfig
+    transformers.AutoTokenizer = AutoTokenizer
+    transformers.AutoModelForCausalLM = AutoModelForCausalLM
+    transformers.AutoModelForSeq2SeqLM = AutoModelForSeq2SeqLM
+
+
     try:
         result = evaluator.simple_evaluate(*args, **kwargs)
         yield result
@@ -34,6 +46,10 @@ def do_eval_with_ctx(*args, **kwargs):
             del os.environ["TOKENIZERS_PARALLELISM"]
         HFLM.get_model_info = origin_get_model_info
         evaluator.get_git_commit_hash = origin_get_git_commit_hash
+        transformers.AutoConfig = origin_AutoConfig
+        transformers.AutoTokenizer = origin_AutoTokenizer
+        transformers.AutoModelForCausalLM = origin_AutoModelForCausalLM
+        transformers.AutoModelForSeq2SeqLM = origin_AutoModelForSeq2SeqLM
 
 
 def eval(*args, **kwargs):
